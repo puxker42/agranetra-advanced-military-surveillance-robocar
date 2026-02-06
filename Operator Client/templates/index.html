@@ -1,44 +1,137 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <title>Robocar Operator UI</title>
+  <title>S.C.O.U.T. Operator Terminal</title>
+  <link rel="stylesheet" href="/static/style.css">
 </head>
+
 <body>
-    <h2>Robocar Control Panel</h2>
 
-    <style>
-        .control-panel { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; width: 200px; margin: 20px 0; }
-        button { padding: 15px; font-size: 16px; cursor: pointer; }
-    </style>
+  <div class="viewport">
+    <!-- Corner Decorations -->
+    <div class="corner corner-tl"></div>
+    <div class="corner corner-tr"></div>
+    <div class="corner corner-bl"></div>
+    <div class="corner corner-br"></div>
 
-    <div class="control-panel">
-        <div></div>
-        <button onclick="send('FWD')">▲</button>
-        <div></div>
-        <button onclick="send('LEFT')">◀</button>
-        <button onclick="send('STOP')">■</button>
-        <button onclick="send('RIGHT')">▶</button>
-        <div></div>
-        <button onclick="send('BACK')">▼</button>
-        <div></div>
+    <!-- Video Feed -->
+    <img src="/video" class="video-feed" alt="NO SIGNAL" />
+
+    <!-- HUD Layer -->
+    <div class="hud-layer">
+      <div class="hud-top">
+        <div class="status-box">
+          <span class="status-label">System Status</span>
+          <span id="connection-status" class="status-value">ONLINE</span>
+        </div>
+        <div class="status-box">
+          <span class="status-label">Last Ping</span>
+          <span id="ping-val" class="status-value">-- ms</span>
+        </div>
+      </div>
+
+      <div class="crosshair"></div>
+
+      <div class="hud-bottom">
+        <div class="status-box">
+          <span class="status-label">Active Command</span>
+          <div id="active-cmd" class="active-command">STOP</div>
+        </div>
+        <div class="control-hint">
+          ARROWS to Move | SPACE to Stop
+        </div>
+      </div>
     </div>
+  </div>
 
-    <p>Status: <span id="status">---</span></p>
+  <script>
+    // --- Configuration ---
+    const SEND_INTERVAL = 100; // ms to throttle repeating keys slightly if needed
 
-    <img src="/video" width="640" style="border: 2px solid #333;" />
+    // --- State ---
+    let lastAckTime = Date.now();
+    let currentCmd = null;
 
-   <script>
-  function send(cmd) {
-    fetch('/cmd/' + cmd);
-  }
+    // --- Network ---
+    function send(cmd) {
+      fetch('/cmd/' + cmd).catch(e => console.error("Cmd Error:", e));
+      updateHudCommand(cmd);
+    }
 
-  setInterval(() => {
-    fetch('/status')
-      .then(r => r.json())
-      .then(d => {
-        document.getElementById('status').innerText = d.last_ack;
-      });
-  }, 500);
-</script>
+    function updateStatus() {
+      fetch('/status')
+        .then(r => r.json())
+        .then(d => {
+          document.getElementById('connection-status').innerText = d.connected ? "CONNECTED" : "SEARCHING...";
+          document.getElementById('connection-status').style.color = d.connected ? "#00ff41" : "#ff0055";
+
+          // Simple simulated ping based on ack update
+          document.getElementById('ping-val').innerText = d.last_ack ? "ACTIVE" : "IDLE";
+        })
+        .catch(e => {
+          document.getElementById('connection-status').innerText = "DISCONNECTED";
+          document.getElementById('connection-status').style.color = "#ff0055";
+        });
+    }
+
+    setInterval(updateStatus, 1000);
+
+    // --- HUD Logic ---
+    const cmdDisplay = document.getElementById('active-cmd');
+    let cmdTimeout;
+
+    function updateHudCommand(cmd) {
+      cmdDisplay.innerText = cmd;
+      cmdDisplay.classList.add('show');
+
+      clearTimeout(cmdTimeout);
+      cmdTimeout = setTimeout(() => {
+        if (cmd === 'STOP') {
+          // Keep STOP visible but maybe dimmed? Or just let it fade?
+          // For now, let's keep it visible until new command
+        }
+      }, 500);
+    }
+
+    // --- Input Handling ---
+    const keyMap = {
+      'ArrowUp': 'FWD',
+      'ArrowDown': 'BACK',
+      'ArrowLeft': 'LEFT',
+      'ArrowRight': 'RIGHT',
+      ' ': 'STOP'
+    };
+
+    let activeKey = null;
+
+    document.addEventListener('keydown', (e) => {
+      const cmd = keyMap[e.key];
+      if (cmd) {
+        e.preventDefault();
+        if (e.repeat) return;
+
+        if (e.key === ' ') {
+          send('STOP');
+          activeKey = null;
+        } else {
+          send(cmd);
+          activeKey = e.key;
+        }
+      }
+    });
+
+    document.addEventListener('keyup', (e) => {
+      if (keyMap[e.key]) {
+        e.preventDefault();
+        // If we released the key that was driving
+        if (e.key === activeKey) {
+          send('STOP');
+          activeKey = null;
+        }
+      }
+    });
+  </script>
 </body>
+
 </html>
