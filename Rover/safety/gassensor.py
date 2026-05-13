@@ -1,7 +1,7 @@
 import RPi.GPIO as GPIO
 
 class GasSensor:
-    def __init__(self, d0_pin=27, mode=GPIO.BCM):
+    def __init__(self, d0_pin=17, mode=GPIO.BCM):
         self.d0_pin = d0_pin
         GPIO.setmode(mode)
         # Active-low: sensor pulls D0 LOW when gas is detected
