@@ -101,3 +101,13 @@ It is highly recommended to use a **Raspberry Pi 4 Model B (or higher)** for the
 * **Flask:** Web server framework for the UI.
 * **YOLOv8 (Ultralytics):** Machine learning model for object detection.
 * **Sockets:** TCP/UDP networking for low-latency communication.
+
+## Hardware Implementation
+
+### 1. Front View
+![AgraNetra Front View](images/front_view.jpg)
+*Front view of the fully assembled rover showing the ultrasonic sensor (obstacle avoidance), gas sensor, and the USB web camera mounted securely on the chassis.*
+
+### 2. Chassis and Wiring (Top View)
+![AgraNetra Chassis Wiring](images/chassis_wiring.jpg)
+*Top-down view displaying the four DC motors, L298N motor driver module, battery placement, and internal wiring configuration.*
